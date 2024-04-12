@@ -1,10 +1,17 @@
+
 from flask import Flask, render_template, request
 import requests
 import plotly.graph_objs as go
 import plotly.io as pio
 import datetime
+import pandas as pd
 
 app = Flask(__name__)
+
+# Load stock symbols from CSV
+def load_stock_symbols():
+    df = pd.read_csv('stocks.csv')
+    return df['Symbol'].tolist()
 
 def fetch_stock_data(stock_symbol, time_series_function):
     url = f"https://www.alphavantage.co/query?function={time_series_function}&symbol={stock_symbol}&apikey=TKD85DJRC6KNT94C"
@@ -37,6 +44,7 @@ def filter_data_by_date(timeseries, begin_date, end_date):
 def index():
     chart = None
     error_message = None
+    stock_symbols = load_stock_symbols()
 
     if request.method == 'POST':
         stock_symbol = request.form['stock_symbol']
@@ -45,10 +53,8 @@ def index():
         begin_date = request.form['begin_date']
         end_date = request.form['end_date']
 
-        # Validate stock symbol
         if not validate_stock_symbol(stock_symbol):
             error_message = "Invalid stock symbol. Please try a different one."
-        # Validate date range
         elif begin_date >= end_date:
             error_message = "The start date must be before the end date."
         else:
@@ -74,7 +80,7 @@ def index():
 
             chart = pio.to_html(fig, full_html=False)
 
-    return render_template('index.html', chart=chart, error_message=error_message)
+    return render_template('index.html', chart=chart, error_message=error_message, stock_symbols=stock_symbols)
 
 if __name__ == '__main__':
     app.run(debug=True)
